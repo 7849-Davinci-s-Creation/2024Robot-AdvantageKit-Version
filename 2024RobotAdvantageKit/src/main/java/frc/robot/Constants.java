@@ -3,6 +3,11 @@ package frc.robot;
 import edu.wpi.first.math.util.Units;
 
 public final class Constants {
+    public enum Mode {
+        REAL,
+        SIM
+    }
+
     public static class OperatorConstants {
         public static final int DRIVER_CONTROLLER_PORT = 0;
         public static final int OPERATOR_CONTROLLER_PORT = 1;
