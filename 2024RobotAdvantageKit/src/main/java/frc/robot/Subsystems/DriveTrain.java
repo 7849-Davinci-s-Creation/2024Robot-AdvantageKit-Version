@@ -1,19 +1,26 @@
 package frc.robot.Subsystems;
 
+import com.ctre.phoenix6.StatusSignal;
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkBase;
 import com.revrobotics.CANSparkLowLevel;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
-import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.RobotContainer;
 import lib.DashboardConfiguration;
+import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
 
-public class DriveTrain extends SubsystemBase implements DashboardConfiguration {
+import static frc.robot.Constants.DriveTrainConstants.GEAR_RATIO;
+
+public class DriveTrain extends SubsystemBase implements DashboardConfiguration, DriveTrainIO {
     private final CANSparkMax leftFrontMotor = new CANSparkMax(Constants.MotorConstants.LEFT_FRONT_MOTOR,
             CANSparkLowLevel.MotorType.kBrushless);
     private final CANSparkMax leftBackMotor = new CANSparkMax(Constants.MotorConstants.LEFT_BACK_MOTOR,
@@ -27,6 +34,10 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration 
     private final RelativeEncoder rightEncoder = rightFrontMotor.getEncoder();
 
     private final AHRS navx = new AHRS(SPI.Port.kMXP);
+
+    private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
+
+    private DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(inputs.gyroYaw, inputs.leftPositionRad, inputs.rightPositionRad);
 
     private boolean isBoosted = false;
     private boolean isCreeping = false;
@@ -47,12 +58,6 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration 
         leftBackMotor.setIdleMode(CANSparkBase.IdleMode.kBrake);
         rightFrontMotor.setIdleMode(CANSparkBase.IdleMode.kBrake);
         rightBackMotor.setIdleMode(CANSparkBase.IdleMode.kBrake);
-
-        leftEncoder.setPositionConversionFactor(Constants.DriveTrainConstants.LINEAR_CONVERSION_FACTOR);
-        rightEncoder.setPositionConversionFactor(Constants.DriveTrainConstants.LINEAR_CONVERSION_FACTOR);
-
-        leftEncoder.setVelocityConversionFactor(Constants.DriveTrainConstants.LINEAR_CONVERSION_FACTOR / 60);
-        rightEncoder.setVelocityConversionFactor(Constants.DriveTrainConstants.LINEAR_CONVERSION_FACTOR / 60);
     }
 
     public void arcadeDrive(double rotate, double drive) {
@@ -62,20 +67,15 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration 
 
         if (drive >= 0) {
             if (rotate >= 0) {
-                leftFrontMotor.set(maximum);
-                rightFrontMotor.set(difference);
-
+                setVoltage(maximum * 12, difference * 12);
             } else {
-                leftFrontMotor.set(total);
-                rightFrontMotor.set(maximum);
+                setVoltage(total * 12, maximum * 12);
             }
         } else {
             if (rotate >= 0) {
-                leftFrontMotor.set(total);
-                rightFrontMotor.set(-maximum);
+                setVoltage(total * 12, -maximum * 12);
             } else {
-                leftFrontMotor.set(-maximum);
-                rightFrontMotor.set(difference);
+                setVoltage(-maximum * 12, difference * 12);
             }
         }
 
@@ -110,28 +110,40 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration 
         leftEncoder.setPosition(0);
     }
 
-    public double getLeftEncoderPosition() {
-        return leftEncoder.getPosition();
-    }
-
-    public double getRightEncoderPosition() {
-        return rightEncoder.getPosition();
-    }
-
-    public double getHeading() {
-        return navx.getRotation2d().getDegrees();
-    }
-
-    public DifferentialDriveWheelSpeeds getWheelSpeeds() {
-        return new DifferentialDriveWheelSpeeds(leftEncoder.getVelocity(), rightEncoder.getVelocity());
-    }
-
-    public Double getAverageEncoderDistance() {
-        return (getLeftEncoderPosition() + getRightEncoderPosition()) / 2;
-    }
-
     public void zeroHeading() {
         navx.reset();
+    }
+
+    @AutoLogOutput(key = "odometry/robot")
+    public Pose2d getPose() {
+        return odometry.getPoseMeters();
+    }
+
+    @AutoLogOutput
+    public double getLeftEncoderPositionMeters() {
+        return inputs.leftPositionRad * Constants.DriveTrainConstants.WHEEL_RADIUS_METERS;
+    }
+
+    @AutoLogOutput
+    public double getRightEncoderPositionMeters() {
+        return inputs.rightPositionRad * Constants.DriveTrainConstants.WHEEL_RADIUS_METERS;
+    }
+
+    @AutoLogOutput
+    public double getHeading() {
+        return inputs.gyroYaw.getDegrees();
+    }
+
+    /** Returns the velocity of the left wheels in meters/second. */
+    @AutoLogOutput
+    public double getLeftVelocityMetersPerSec() {
+        return inputs.leftVelocityRadPerSec * Constants.DriveTrainConstants.WHEEL_RADIUS_METERS;
+    }
+
+    /** Returns the velocity of the right wheels in meters/second. */
+    @AutoLogOutput
+    public double getRightVelocityMetersPerSec() {
+        return inputs.rightVelocityRadPerSec * Constants.DriveTrainConstants.WHEEL_RADIUS_METERS;
     }
 
     public Boolean isBoosted() {
@@ -185,7 +197,36 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration 
     }
 
     @Override
+    public void updateInputs(DriveIOInputs inputs) {
+        inputs.leftPositionRad = Units.rotationsToRadians(leftEncoder.getPosition() / GEAR_RATIO);
+        inputs.rightPositionRad = Units.rotationsToRadians(rightEncoder.getPosition() / GEAR_RATIO);
+
+        inputs.leftVelocityRadPerSec = Units.rotationsPerMinuteToRadiansPerSecond(leftEncoder.getVelocity() / GEAR_RATIO);
+        inputs.rightVelocityRadPerSec = Units.rotationsPerMinuteToRadiansPerSecond(rightEncoder.getVelocity() / GEAR_RATIO);
+
+        inputs.leftAppliedVolts = leftFrontMotor.getAppliedOutput() * leftFrontMotor.getBusVoltage();
+        inputs.rightAppliedVolts = rightFrontMotor.getAppliedOutput() * rightFrontMotor.getBusVoltage();
+
+        inputs.leftCurrentAmps = new double[]{leftFrontMotor.getOutputCurrent(), leftBackMotor.getOutputCurrent()};
+        inputs.rightCurrentAmps = new double[]{rightFrontMotor.getOutputCurrent(), rightBackMotor.getOutputCurrent()};
+    }
+
+    @Override
+    public void setVoltage(double leftVolts, double rightVolts) {
+        leftFrontMotor.setVoltage(leftVolts);
+        rightFrontMotor.setVoltage(rightVolts);
+    }
+
+    @Override
     public void periodic() {
+        updateInputs(inputs);
+        Logger.processInputs("Drivetrain", inputs);
+
+        odometry = new DifferentialDriveOdometry(inputs.gyroYaw,
+                getLeftEncoderPositionMeters(),
+                getRightEncoderPositionMeters()
+        );
+
         this.configureDashboard();
     }
 
@@ -203,8 +244,8 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration 
 
         if (RobotContainer.debugMode) {
             SmartDashboard.putNumber("Gyro Heading", getHeading());
-            SmartDashboard.putNumber("Left Encoder Value (feet)", getLeftEncoderPosition());
-            SmartDashboard.putNumber("Right Encoder Value (feet) ", getRightEncoderPosition());
+            SmartDashboard.putNumber("Left Encoder Value (feet)", getLeftEncoderPositionMeters());
+            SmartDashboard.putNumber("Right Encoder Value (feet) ", getRightEncoderPositionMeters());
         }
     }
 }

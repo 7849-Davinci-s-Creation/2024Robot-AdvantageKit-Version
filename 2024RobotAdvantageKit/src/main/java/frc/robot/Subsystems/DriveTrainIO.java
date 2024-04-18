@@ -1,5 +1,6 @@
 package frc.robot.Subsystems;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import org.littletonrobotics.junction.AutoLog;
 
@@ -18,15 +19,10 @@ public interface DriveTrainIO {
 
         public Rotation2d gyroYaw = new Rotation2d();
 
-        public boolean isBoosted = false;
-        public boolean isCreeping = false;
-        public boolean isNormal = true;
-        public boolean isInverted = false;
+        public Pose2d robotPose = new Pose2d();
     }
 
     default void updateInputs(DriveIOInputs inputs) {}
 
     default void setVoltage(double leftVolts, double rightVolts) {}
-
-    default void setVelocity(double leftRadPerSec, double rightRadPerSec, double leftFFVolts, double rightFFVolts) {}
 }

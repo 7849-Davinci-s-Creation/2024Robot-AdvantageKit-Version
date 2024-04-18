@@ -38,13 +38,12 @@ public final class Constants {
         public static final double CREEP_DRIVE_NERF = 0.25;
         public static final double CREEP_ROTATE_NERF = 0.25;
         public static final double GEAR_RATIO = 8.46;
-        public static final double WHEEL_RADIUS_INCHES = 3;
-        public static final double LINEAR_CONVERSION_FACTOR = Units.inchesToMeters(
-                1 / (GEAR_RATIO * 2 * Math.PI * Units.inchesToMeters(WHEEL_RADIUS_INCHES)) * 10);
+        public static final double WHEEL_RADIUS_METERS = Units.inchesToMeters(3);
         public static final double TURN_P = 0.0033;
         public static final double ROTATE_P = 0.005;
         public static final double ROTATE_I = 0.01;
         public static final double ROTATE_D = 0.001;
+        public static final double TRACK_WIDTH_METERS = 0.584;
     }
 
     public static class ShooterConstants {
