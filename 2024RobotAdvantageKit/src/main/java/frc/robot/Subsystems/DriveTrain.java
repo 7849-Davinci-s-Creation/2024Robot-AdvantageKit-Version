@@ -134,13 +134,11 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration,
         return inputs.gyroYaw.getDegrees();
     }
 
-    /** Returns the velocity of the left wheels in meters/second. */
     @AutoLogOutput
     public double getLeftVelocityMetersPerSec() {
         return inputs.leftVelocityRadPerSec * Constants.DriveTrainConstants.WHEEL_RADIUS_METERS;
     }
 
-    /** Returns the velocity of the right wheels in meters/second. */
     @AutoLogOutput
     public double getRightVelocityMetersPerSec() {
         return inputs.rightVelocityRadPerSec * Constants.DriveTrainConstants.WHEEL_RADIUS_METERS;
