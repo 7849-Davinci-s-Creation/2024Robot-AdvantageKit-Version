@@ -1,6 +1,5 @@
 package frc.robot.Subsystems;
 
-import com.ctre.phoenix6.StatusSignal;
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkBase;
 import com.revrobotics.CANSparkLowLevel;
