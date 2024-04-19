@@ -176,10 +176,8 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration 
         SmartDashboard.putBoolean("Creep", this.isCreeping());
         SmartDashboard.putBoolean("Normal", this.isNormal());
 
-        if (RobotContainer.debugMode) {
-            SmartDashboard.putNumber("Gyro Heading", getHeading());
-            SmartDashboard.putNumber("Left Encoder Value (feet)", getLeftEncoderPositionMeters());
-            SmartDashboard.putNumber("Right Encoder Value (feet) ", getRightEncoderPositionMeters());
-        }
+        SmartDashboard.putNumber("Gyro Heading", getHeading());
+        SmartDashboard.putNumber("Left Encoder Value (feet)", getLeftEncoderPositionMeters());
+        SmartDashboard.putNumber("Right Encoder Value (feet) ", getRightEncoderPositionMeters());
     }
 }
