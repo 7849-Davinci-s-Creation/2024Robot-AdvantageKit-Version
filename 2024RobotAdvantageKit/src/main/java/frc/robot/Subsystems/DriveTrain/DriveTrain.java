@@ -1,11 +1,11 @@
 package frc.robot.Subsystems.DriveTrain;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.Subsystems.DriveIOInputsAutoLogged;
 import lib.DashboardConfiguration;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -68,6 +68,20 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration 
         }
 
         return value;
+    }
+
+    public void zeroHeading() {
+        inputs.gyroYaw = new Rotation2d(0);
+    }
+
+    public void resetEncoders() {
+        inputs.rightPositionRad = 0;
+        inputs.leftPositionRad = 0;
+    }
+
+    @AutoLogOutput
+    public double getAverageEncoderDistance() {
+        return (getLeftEncoderPositionMeters() + getRightEncoderPositionMeters()) / 2;
     }
 
     @AutoLogOutput(key = "odometry/robot")
