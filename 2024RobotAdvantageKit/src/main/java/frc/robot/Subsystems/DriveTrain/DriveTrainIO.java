@@ -1,4 +1,4 @@
-package frc.robot.Subsystems;
+package frc.robot.Subsystems.DriveTrain;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -25,4 +25,6 @@ public interface DriveTrainIO {
     default void updateInputs(DriveIOInputs inputs) {}
 
     default void setVoltage(double leftVolts, double rightVolts) {}
+
+    default void setVelocity(double leftRadPerSec, double rightRadPerSec, double leftFFVolts, double rightFFVolts) {}
 }

@@ -1,40 +1,19 @@
-package frc.robot.Subsystems;
+package frc.robot.Subsystems.DriveTrain;
 
-import com.kauailabs.navx.frc.AHRS;
-import com.revrobotics.CANSparkBase;
-import com.revrobotics.CANSparkLowLevel;
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.RelativeEncoder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.RobotContainer;
+import frc.robot.Subsystems.DriveIOInputsAutoLogged;
 import lib.DashboardConfiguration;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-import static frc.robot.Constants.DriveTrainConstants.GEAR_RATIO;
-
-public class DriveTrain extends SubsystemBase implements DashboardConfiguration, DriveTrainIO {
-    private final CANSparkMax leftFrontMotor = new CANSparkMax(Constants.MotorConstants.LEFT_FRONT_MOTOR,
-            CANSparkLowLevel.MotorType.kBrushless);
-    private final CANSparkMax leftBackMotor = new CANSparkMax(Constants.MotorConstants.LEFT_BACK_MOTOR,
-            CANSparkLowLevel.MotorType.kBrushless);
-    private final CANSparkMax rightFrontMotor = new CANSparkMax(Constants.MotorConstants.RIGHT_FRONT_MOTOR,
-            CANSparkLowLevel.MotorType.kBrushless);
-    private final CANSparkMax rightBackMotor = new CANSparkMax(Constants.MotorConstants.RIGHT_BACK_MOTOR,
-            CANSparkLowLevel.MotorType.kBrushless);
-
-    private final RelativeEncoder leftEncoder = leftFrontMotor.getEncoder();
-    private final RelativeEncoder rightEncoder = rightFrontMotor.getEncoder();
-
-    private final AHRS navx = new AHRS(SPI.Port.kMXP);
-
+public class DriveTrain extends SubsystemBase implements DashboardConfiguration {
     private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
+    private final DriveTrainIO io;
 
     private DifferentialDriveOdometry odometry = new DifferentialDriveOdometry(inputs.gyroYaw, inputs.leftPositionRad, inputs.rightPositionRad);
 
@@ -43,20 +22,8 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration,
     private boolean isNormal = true;
     private boolean isInverted = false;
 
-    public DriveTrain() {
-        zeroHeading();
-        resetEncoders();
-
-        // set back motors to follow the front ones.
-        leftBackMotor.follow(leftFrontMotor);
-        rightBackMotor.follow(rightFrontMotor);
-        leftFrontMotor.setInverted(true);
-
-        // put into break mode for safety and ease of use!
-        leftFrontMotor.setIdleMode(CANSparkBase.IdleMode.kBrake);
-        leftBackMotor.setIdleMode(CANSparkBase.IdleMode.kBrake);
-        rightFrontMotor.setIdleMode(CANSparkBase.IdleMode.kBrake);
-        rightBackMotor.setIdleMode(CANSparkBase.IdleMode.kBrake);
+    public DriveTrain(DriveTrainIO io) {
+        this.io = io;
     }
 
     public void arcadeDrive(double rotate, double drive) {
@@ -66,15 +33,15 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration,
 
         if (drive >= 0) {
             if (rotate >= 0) {
-                setVoltage(maximum * 12, difference * 12);
+                io.setVoltage(maximum * 12, difference * 12);
             } else {
-                setVoltage(total * 12, maximum * 12);
+                io.setVoltage(total * 12, maximum * 12);
             }
         } else {
             if (rotate >= 0) {
-                setVoltage(total * 12, -maximum * 12);
+                io.setVoltage(total * 12, -maximum * 12);
             } else {
-                setVoltage(-maximum * 12, difference * 12);
+                io.setVoltage(-maximum * 12, difference * 12);
             }
         }
 
@@ -102,15 +69,6 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration,
         }
 
         return value;
-    }
-
-    public void resetEncoders() {
-        rightEncoder.setPosition(0);
-        leftEncoder.setPosition(0);
-    }
-
-    public void zeroHeading() {
-        navx.reset();
     }
 
     @AutoLogOutput(key = "odometry/robot")
@@ -194,29 +152,8 @@ public class DriveTrain extends SubsystemBase implements DashboardConfiguration,
     }
 
     @Override
-    public void updateInputs(DriveIOInputs inputs) {
-        inputs.leftPositionRad = Units.rotationsToRadians(leftEncoder.getPosition() / GEAR_RATIO);
-        inputs.rightPositionRad = Units.rotationsToRadians(rightEncoder.getPosition() / GEAR_RATIO);
-
-        inputs.leftVelocityRadPerSec = Units.rotationsPerMinuteToRadiansPerSecond(leftEncoder.getVelocity() / GEAR_RATIO);
-        inputs.rightVelocityRadPerSec = Units.rotationsPerMinuteToRadiansPerSecond(rightEncoder.getVelocity() / GEAR_RATIO);
-
-        inputs.leftAppliedVolts = leftFrontMotor.getAppliedOutput() * leftFrontMotor.getBusVoltage();
-        inputs.rightAppliedVolts = rightFrontMotor.getAppliedOutput() * rightFrontMotor.getBusVoltage();
-
-        inputs.leftCurrentAmps = new double[]{leftFrontMotor.getOutputCurrent(), leftBackMotor.getOutputCurrent()};
-        inputs.rightCurrentAmps = new double[]{rightFrontMotor.getOutputCurrent(), rightBackMotor.getOutputCurrent()};
-    }
-
-    @Override
-    public void setVoltage(double leftVolts, double rightVolts) {
-        leftFrontMotor.setVoltage(leftVolts);
-        rightFrontMotor.setVoltage(rightVolts);
-    }
-
-    @Override
     public void periodic() {
-        updateInputs(inputs);
+        io.updateInputs(inputs);
         Logger.processInputs("Drivetrain", inputs);
 
         odometry = new DifferentialDriveOdometry(inputs.gyroYaw,

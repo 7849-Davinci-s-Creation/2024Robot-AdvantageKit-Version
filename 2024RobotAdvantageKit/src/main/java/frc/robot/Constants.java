@@ -5,7 +5,8 @@ import edu.wpi.first.math.util.Units;
 public final class Constants {
     public enum Mode {
         REAL,
-        SIM
+        SIM,
+        REPLAY
     }
 
     public static class OperatorConstants {
