@@ -5,7 +5,7 @@ import org.littletonrobotics.junction.AutoLog;
 public interface IntakeIO {
     @AutoLog
     class IntakeIOInputs {
-        double feedPositionRad = 0.0;
+            double feedPositionRad = 0.0;
         double feedVelocityRadPerSec = 0.0;
         double feedAppliedVolts = 0.0;
         double[] feedCurrentAmps = new double[] {};
@@ -14,6 +14,8 @@ public interface IntakeIO {
         double intakeVelocityRadPerSec = 0.0;
         double intakeAppliedVolts = 0.0;
         double[] intakeCurrentAmps = new double[] {};
+
+        boolean noteState = false;
     }
 
     /** Updates the set of loggable inputs. */
